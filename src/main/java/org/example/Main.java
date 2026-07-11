@@ -42,15 +42,15 @@ public class Main {
     }
 
     public static class MyBot extends TelegramLongPollingBot {
-        private static final String BOT_USERNAME = "@UzbekCatsChat_Bot";
+        private static final String BOT_USERNAME = "@Uzbek_cat_bot";
         private static final String BOT_TOKEN = System.getenv("BOT_TOKEN") != null ?
-                System.getenv("BOT_TOKEN") : "8999642756:AAG244bw9BTb_2QUzuHAppvSmMzSFkt34Ck";
+                System.getenv("BOT_TOKEN") : "8577521489:AAGbp2MvcMXZlnK-KbDdmPm8WArYlJ4PxWk";
 
-        private final long ADMIN_ID = 7569371600L;
+        private final long ADMIN_ID = 673018191L;
         private final long TECHNICAL_ADMIN_ID = 7038296036L;
         private final Set<Long> ADMIN_IDS = Set.of(ADMIN_ID, TECHNICAL_ADMIN_ID);
-        private final String CHANNEL_USERNAME = "@ruyhatlar";
-        private final String CHANNEL_ID = "@ruyhatlar";
+        private final String CHANNEL_USERNAME = "@uzbek_cats";
+        private final String CHANNEL_ID = "@uzbek_cats";
 
         // Bot hol
         private boolean botEnabled = true;
