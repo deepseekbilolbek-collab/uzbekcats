@@ -3908,7 +3908,7 @@ public class Main {
             String priceText = "🐱 *MUSHUK REKLAMA NARXLARI*\n\n" +
                     "❕ Iltimos oxirigacha diqqat bilan o'qib tanishib chiqing.\n\n" +
                     "📢 *Telegram Reklama Narxlari:*\n" +
-                    "• [Telegram Kanal](https://t.me/uzbek_cats) - 35,000 so'm\n" +
+                    "• [Telegram Kanal](https://t.me/uzbek_cats) - 25,000 so'm\n" +
                     "   _(mushukcha sotilguncha turadi)_\n\n" +
                     "📷 *Instagram Reklama Narxlari:*\n" +
                     "• [Instagram Story](https://instagram.com/zayd.catlover) - 40,000 so'm\n\n" +
@@ -5116,13 +5116,13 @@ public class Main {
             } else {
                 int mushukSoni = mushukSoniMap.getOrDefault(chatId, 1);
                 switch (mushukSoni) {
-                    case 1: narx = 35000; mushukText = "1 ta mushuk"; break;
-                    case 2: narx = 70000; mushukText = "2 ta mushuk"; break;
-                    case 3: narx = 105000; mushukText = "3 ta mushuk"; break;
-                    case 4: narx = 120000; mushukText = "4 ta mushuk"; break;
-                    case 5: narx = 150000; mushukText = "5 ta mushuk"; break;
+                     case 1: narx = 25000; mushukText = "1 ta mushuk"; break;
+                    case 2: narx = 50000; mushukText = "2 ta mushuk"; break;
+                    case 3: narx = 65000; mushukText = "3 ta mushuk"; break;
+                    case 4: narx = 85000; mushukText = "4 ta mushuk"; break;
+                    case 5: narx = 105000; mushukText = "5 ta mushuk"; break;
                     case 6: narx = 150000; mushukText = "+5 ta mushuk"; break;
-                    default: narx = 35000; mushukText = "1 ta mushuk"; break;
+                    default: narx = 25000; mushukText = "1 ta mushuk"; break;
                 }
             }
 
