@@ -42,17 +42,17 @@ public class Main {
     }
 
     public static class MyBot extends TelegramLongPollingBot {
-        private static final String BOT_USERNAME = "@Uzbek_cat_bot";
+        private static final String BOT_USERNAME = "@UzbekCatsChat_Bot";
         private static final String BOT_TOKEN = System.getenv("BOT_TOKEN") != null ?
-                System.getenv("BOT_TOKEN") : "8577521489:AAGbp2MvcMXZlnK-KbDdmPm8WArYlJ4PxWk";
+                System.getenv("BOT_TOKEN") : "8999642756:AAF3ChTyA7OpDsVGn6edhje2XVSFSD7120s";
 
         private final long ADMIN_ID = 673018191L;
         private final long TECHNICAL_ADMIN_ID = 7038296036L;
         private final Set<Long> ADMIN_IDS = Set.of(ADMIN_ID, TECHNICAL_ADMIN_ID);
-        private final String CHANNEL_USERNAME = "@uzbek_cats";
-        private final String CHANNEL_ID = "@uzbek_cats";
+        private final String CHANNEL_USERNAME = "@ruyhatlar";
+        private final String CHANNEL_ID = "@ruyhatlar";
 
-        // Bot hol
+        // Bot
         private boolean botEnabled = true;
         private final Set<Long> bannedUsers = new HashSet<>();
 
@@ -100,15 +100,15 @@ public class Main {
         private final Map<Long, String> referralCodes = new ConcurrentHashMap<>();
         private final Map<String, Long> codeToUserMap = new ConcurrentHashMap<>();
 
-        // Konkurs - YANGI: video va media turi qo'shildi
-        private String currentKonkursImageUrl = "https://i.postimg.cc/YvGp1gHt/image.jpg";
+        // Konkurs - YANGI
+        private String currentKonkursImageUrl = null;
         private String currentKonkursVideoUrl = null;
         private String currentKonkursMediaType = "photo"; // "photo" yoki "video"
         private String currentKonkursText = "🎁 Scottish fold black\n\nSiz toplagan ovoz ochib ketmaydi toki 🏆 g'olib bo'lgungizgacha 💯";
 
         // Bloklangan so'zlar
         private final Set<String> bannedWords = Set.of(
-                "mushuk sotiladi", "mushuk bor", "sotaman", "sotiladi", "bor",
+                "mushuk sotiladi", "mushuk bor", "sotaman", "sotiladi", "mushu bor","muwu bor","muwu bo","Mushuk bor",
                 "sotuvda", "arzonga mushuk", "hadiyaga", "mendayam bor",
                 "atrofida bor", "sotman", "kimga mushuk kerak", "Mandayam bor",
                 "beramiz", "beraman", "сотаман", "мушук бор", "бор", "бера",
@@ -340,56 +340,284 @@ public class Main {
             }
         }
 
-        // ==================== YANGI QO'SHILGAN KONKURS VIDEO METODLARI ====================
+        // ==================== KONKURS METODLARI (YANGILANGAN) ====================
 
         /**
-         * Konkurs mukofotini yuborish - video qo'llab-quvvatlanadi
+         * Konkurs mukofotini yuborish - video yoki rasm
          */
         private void sendKonkursMukofot(long chatId) throws TelegramApiException {
             try {
+                // Foydalanuvchining referral linki
+                String referralCode = generateReferralCode(chatId);
+                String referralLink = "https://t.me/" + getBotUsername().replace("@", "") + "?start=" + referralCode;
+                int userScore = getUserScore(chatId);
+                int referralCount = getReferralCount(chatId);
+
+                // Konkurs xabarini yaratish
+                String message = buildKonkursMessage(chatId, referralLink, userScore, referralCount);
+
                 if ("video".equals(currentKonkursMediaType) && currentKonkursVideoUrl != null) {
                     // Video yuborish
                     SendVideo video = new SendVideo();
                     video.setChatId(String.valueOf(chatId));
                     video.setVideo(new InputFile(currentKonkursVideoUrl));
-                    video.setCaption(currentKonkursText);
+                    video.setCaption(message);
                     video.setParseMode("Markdown");
+
+                    // Tugmalar qo'shish
+                    InlineKeyboardMarkup markup = buildKonkursButtons(chatId, referralLink);
+                    video.setReplyMarkup(markup);
+
                     execute(video);
                 } else if (currentKonkursImageUrl != null && !currentKonkursImageUrl.isEmpty()) {
                     // Rasm yuborish
                     SendPhoto photo = new SendPhoto();
                     photo.setChatId(String.valueOf(chatId));
                     photo.setPhoto(new InputFile(currentKonkursImageUrl));
-                    photo.setCaption(currentKonkursText);
+                    photo.setCaption(message);
                     photo.setParseMode("Markdown");
+
+                    // Tugmalar qo'shish
+                    InlineKeyboardMarkup markup = buildKonkursButtons(chatId, referralLink);
+                    photo.setReplyMarkup(markup);
+
                     execute(photo);
                 } else {
-                    sendText(chatId, currentKonkursText);
+                    // Faqat matn
+                    SendMessage msg = new SendMessage();
+                    msg.setChatId(String.valueOf(chatId));
+                    msg.setText(message);
+                    msg.setParseMode("Markdown");
+
+                    // Tugmalar qo'shish
+                    InlineKeyboardMarkup markup = buildKonkursButtons(chatId, referralLink);
+                    msg.setReplyMarkup(markup);
+
+                    execute(msg);
                 }
             } catch (Exception e) {
                 System.out.println("❌ Konkurs media yuborishda xatolik: " + e.getMessage());
-                sendText(chatId, "📷 " + currentKonkursText);
+                sendText(chatId, "❌ Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.");
             }
         }
 
         /**
-         * Admin - Faqat video o'zgartirish
+         * Konkurs xabarini yaratish
          */
-        private void handleAdminKonkursVideoOnly(long adminId) throws TelegramApiException {
-            stateMap.put(adminId, "admin_await_konkurs_video_only");
+        private String buildKonkursMessage(long chatId, String referralLink, int userScore, int referralCount) {
+            return "🏆 *MUSHLUKLAR KONKURSI*\n\n" +
+                    currentKonkursText + "\n\n" +
+                    "🔗 *Sizning referral linkingiz:*\n" +
+                    "`" + referralLink + "`\n\n" +
+                    "📊 *Sizning ballingiz:* " + userScore + " ball\n" +
+                    "👥 *Taklif qilganlar:* " + referralCount + " kishi";
+        }
+
+        /**
+         * Konkurs tugmalarini yaratish
+         */
+        private InlineKeyboardMarkup buildKonkursButtons(long chatId, String referralLink) throws TelegramApiException {
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+            // 1-qator: Referral linkni ulashish
+            InlineKeyboardButton shareBtn = new InlineKeyboardButton();
+            shareBtn.setText("📤 Referral linkni ulashish");
+            try {
+                shareBtn.setUrl("https://t.me/share/url?url=" + URLEncoder.encode(referralLink, "UTF-8") +
+                        "&text=" + URLEncoder.encode("Mushuklar konkursiga qo'shiling! Bu mening referral linkim:", "UTF-8"));
+            } catch (Exception e) {
+                shareBtn.setUrl("https://t.me/share/url?url=" + referralLink);
+            }
+            rows.add(Collections.singletonList(shareBtn));
+
+            // 2-qator: Mukofot va Reting
+            List<InlineKeyboardButton> row2 = new ArrayList<>();
+
+            InlineKeyboardButton mukofotBtn = new InlineKeyboardButton();
+            mukofotBtn.setText("🎁 Mukofot");
+            mukofotBtn.setCallbackData("konkurs_mukofot_only");
+            row2.add(mukofotBtn);
+
+            InlineKeyboardButton retingBtn = new InlineKeyboardButton();
+            retingBtn.setText("🏆 Reting");
+            retingBtn.setCallbackData("konkurs_reting");
+            row2.add(retingBtn);
+            rows.add(row2);
+
+            // 3-qator: Asosiy menyu
+            InlineKeyboardButton menuBtn = new InlineKeyboardButton();
+            menuBtn.setText("🏠 Asosiy menyu");
+            menuBtn.setCallbackData("menu_main");
+            rows.add(Collections.singletonList(menuBtn));
+
+            markup.setKeyboard(rows);
+            return markup;
+        }
+
+        /**
+         * Faqat mukofotni ko'rsatish (video/rasm)
+         */
+        private void sendKonkursMukofotOnly(long chatId) throws TelegramApiException {
+            try {
+                if ("video".equals(currentKonkursMediaType) && currentKonkursVideoUrl != null) {
+                    SendVideo video = new SendVideo();
+                    video.setChatId(String.valueOf(chatId));
+                    video.setVideo(new InputFile(currentKonkursVideoUrl));
+                    video.setCaption("🎁 *MUKOFOT*\n\n" + currentKonkursText);
+                    video.setParseMode("Markdown");
+                    execute(video);
+                } else if (currentKonkursImageUrl != null && !currentKonkursImageUrl.isEmpty()) {
+                    SendPhoto photo = new SendPhoto();
+                    photo.setChatId(String.valueOf(chatId));
+                    photo.setPhoto(new InputFile(currentKonkursImageUrl));
+                    photo.setCaption("🎁 *MUKOFOT*\n\n" + currentKonkursText);
+                    photo.setParseMode("Markdown");
+                    execute(photo);
+                } else {
+                    sendText(chatId, "🎁 *MUKOFOT*\n\n" + currentKonkursText);
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Mukofot yuborishda xatolik: " + e.getMessage());
+                sendText(chatId, "❌ Xatolik yuz berdi.");
+            }
+        }
+
+        // ==================== ADMIN KONKURS METODLARI ====================
+
+        /**
+         * Admin - Konkurs media menyusi
+         */
+        private void sendAdminKonkursMediaMenu(long chatId) throws TelegramApiException {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(String.valueOf(chatId));
+            msg.setText("🏆 *Konkurs shartlarini o'zgartirish*\n\n" +
+                    "Hozirgi media turi: " + ("video".equals(currentKonkursMediaType) ? "🎥 Video" : "🖼️ Rasm") +
+                    "\n\nQuyidagilardan birini tanlang:");
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+            InlineKeyboardButton videoBtn = new InlineKeyboardButton();
+            videoBtn.setText("🎥 Video va matn joylash");
+            videoBtn.setCallbackData("admin_konkurs_video");
+            rows.add(Collections.singletonList(videoBtn));
+
+            InlineKeyboardButton imageBtn = new InlineKeyboardButton();
+            imageBtn.setText("🖼️ Rasm va matn joylash");
+            imageBtn.setCallbackData("admin_konkurs_image");
+            rows.add(Collections.singletonList(imageBtn));
+
+            InlineKeyboardButton backBtn = new InlineKeyboardButton();
+            backBtn.setText("↩️ Orqaga");
+            backBtn.setCallbackData("admin_panel");
+            rows.add(Collections.singletonList(backBtn));
+
+            markup.setKeyboard(rows);
+            msg.setReplyMarkup(markup);
+            execute(msg);
+        }
+
+        /**
+         * Admin - Video yuborish
+         */
+        private void handleAdminKonkursVideo(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_konkurs_video");
             sendText(adminId, "🎥 Iltimos, yangi konkurs videosini yuboring:\n\n" +
                     "• Video 10 soniyadan uzun bo'lmasin\n" +
                     "• Video aniq va yorug' bo'lsin");
         }
 
         /**
-         * Admin - Ikkalasini o'zgartirish (video/rasm + matn)
+         * Admin - Rasm yuborish
          */
-        private void handleAdminKonkursBoth(long adminId) throws TelegramApiException {
-            stateMap.put(adminId, "admin_await_konkurs_image_both");
-            sendText(adminId, "🖼️ Iltimos, yangi konkurs rasmi yoki videosini yuboring:\n\n" +
-                    "• Rasm yoki video (10 soniyagacha) yuboring\n" +
-                    "• Keyin matn yuborasiz");
+        private void handleAdminKonkursImage(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_konkurs_image");
+            sendText(adminId, "🖼️ Iltimos, yangi konkurs rasmini yuboring:\n\n" +
+                    "• Rasm aniq va yorug' bo'lsin\n" +
+                    "• Format: JPEG, PNG");
+        }
+
+        /**
+         * Admin - Matn yuborish (video uchun)
+         */
+        private void handleAdminKonkursText(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_konkurs_text");
+            sendText(adminId, "📝 Iltimos, yangi konkurs matnini yuboring:");
+        }
+
+        // ==================== ADMIN BALL QO'SHISH ====================
+
+        /**
+         * Admin - Ball qo'shish menyusi
+         */
+        private void handleAdminAddScore(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_user_id");
+            sendText(adminId, "👤 Iltimos, ball qo'shmoqchi bo'lgan foydalanuvchi raqamini kiriting:\n\n" +
+                    "Masalan: #3 deb yozing yoki faqat 3\n\n" +
+                    "Yoki /cancel ni bosing bekor qilish uchun.");
+        }
+
+        /**
+         * Admin - Ball miqdorini kiritish
+         */
+        private void handleAdminScoreAmount(long adminId, String userIdStr) throws TelegramApiException {
+            try {
+                int userNumber = Integer.parseInt(userIdStr.trim().replace("#", ""));
+                Long userId = null;
+
+                for (Map.Entry<Long, Integer> entry : userNumberMap.entrySet()) {
+                    if (entry.getValue() == userNumber) {
+                        userId = entry.getKey();
+                        break;
+                    }
+                }
+
+                if (userId == null) {
+                    sendText(adminId, "❌ #" + userNumber + " raqamli foydalanuvchi topilmadi!");
+                    return;
+                }
+
+                stateMap.put(adminId, "admin_await_score_" + userId);
+                sendText(adminId, "📊 Qancha ball qo'shmoqchisiz?\n\n" +
+                        "Masalan: 5, 10, 100");
+            } catch (NumberFormatException e) {
+                sendText(adminId, "❌ Iltimos, raqam kiriting! Masalan: 3, 5, 10");
+            }
+        }
+
+        /**
+         * Admin - Ball qo'shish
+         */
+        private void handleAdminAddScoreConfirm(long adminId, String data) throws TelegramApiException {
+            String userIdStr = data.substring("admin_await_score_".length());
+            long userId = Long.parseLong(userIdStr);
+
+            String scoreStr = stateMap.get(adminId);
+            if (scoreStr == null) {
+                sendText(adminId, "❌ Xatolik yuz berdi. Qayta urinib ko'ring.");
+                return;
+            }
+
+            try {
+                int score = Integer.parseInt(scoreStr.trim());
+                addScoreToUser(userId, score);
+
+                int userNumber = userNumberMap.getOrDefault(userId, 0);
+                String username = userUsernameMap.getOrDefault(userId, "Noma'lum");
+                int totalScore = getUserScore(userId);
+
+                sendText(adminId, "✅ #" + userNumber + " foydalanuvchiga " + score + " ball qo'shildi!\n" +
+                        "Jami ball: " + totalScore);
+
+                sendText(userId, "🎉 Tabriklaymiz! Sizga " + score + " ball qo'shildi!\n" +
+                        "🏆 Jami ballingiz: " + totalScore + "\n\n" +
+                        "Konkursda omad tilaymiz! 🍀");
+
+                stateMap.remove(adminId);
+            } catch (NumberFormatException e) {
+                sendText(adminId, "❌ Iltimos, raqam kiriting!");
+            }
         }
 
         // ==================== HANDLE MESSAGE ====================
@@ -479,8 +707,8 @@ public class Main {
 
             // ===== ADMIN KONKURS VIDEO STATES =====
             if (ADMIN_IDS.contains(chatId)) {
-                // Faqat video o'zgartirish
-                if ("admin_await_konkurs_video_only".equals(state)) {
+                // Admin video yuborish
+                if ("admin_await_konkurs_video".equals(state)) {
                     if (msg.hasVideo()) {
                         Video video = msg.getVideo();
                         if (video.getDuration() <= 10) {
@@ -488,9 +716,8 @@ public class Main {
                             currentKonkursVideoUrl = fileId;
                             currentKonkursMediaType = "video";
                             currentKonkursImageUrl = null;
-                            sendText(chatId, "✅ Konkurs videosi muvaffaqiyatli yangilandi!");
-                            stateMap.put(chatId, "");
-                            sendKonkursMukofot(chatId);
+                            sendText(chatId, "✅ Video qabul qilindi! Endi matn yuboring:");
+                            stateMap.put(chatId, "admin_await_konkurs_text");
                         } else {
                             sendText(chatId, "❌ Video 10 soniyadan uzun! Iltimos, 10 soniyagacha video yuboring.");
                         }
@@ -500,35 +727,24 @@ public class Main {
                     return;
                 }
 
-                // Ikkalasini o'zgartirish (video/rasm + matn)
-                if ("admin_await_konkurs_image_both".equals(state)) {
-                    if (msg.hasVideo()) {
-                        Video video = msg.getVideo();
-                        if (video.getDuration() <= 10) {
-                            String fileId = video.getFileId();
-                            currentKonkursVideoUrl = fileId;
-                            currentKonkursMediaType = "video";
-                            currentKonkursImageUrl = null;
-                            stateMap.put(chatId, "admin_await_konkurs_text_both");
-                            sendText(chatId, "✅ Video qabul qilindi! Endi yangi konkurs matnini yuboring:");
-                        } else {
-                            sendText(chatId, "❌ Video 10 soniyadan uzun! Iltimos, 10 soniyagacha video yuboring.");
-                        }
-                    } else if (msg.hasPhoto()) {
+                // Admin rasm yuborish
+                if ("admin_await_konkurs_image".equals(state)) {
+                    if (msg.hasPhoto()) {
                         List<PhotoSize> photos = msg.getPhoto();
                         String fileId = photos.get(photos.size()-1).getFileId();
                         currentKonkursImageUrl = fileId;
                         currentKonkursMediaType = "photo";
                         currentKonkursVideoUrl = null;
-                        stateMap.put(chatId, "admin_await_konkurs_text_both");
-                        sendText(chatId, "✅ Rasm qabul qilindi! Endi yangi konkurs matnini yuboring:");
+                        sendText(chatId, "✅ Rasm qabul qilindi! Endi matn yuboring:");
+                        stateMap.put(chatId, "admin_await_konkurs_text");
                     } else {
-                        sendText(chatId, "❌ Iltimos, rasm yoki video yuboring!");
+                        sendText(chatId, "❌ Iltimos, faqat rasm yuboring!");
                     }
                     return;
                 }
 
-                if ("admin_await_konkurs_text_both".equals(state)) {
+                // Admin matn yuborish
+                if ("admin_await_konkurs_text".equals(state)) {
                     if (msg.hasText()) {
                         currentKonkursText = msg.getText();
                         sendText(chatId, "✅ Konkurs rasmi/videosi va matni muvaffaqiyatli yangilandi!");
@@ -540,7 +756,32 @@ public class Main {
                     return;
                 }
 
-                // Admin boshqa state'lar...
+                // Admin ball qo'shish - user ID
+                if ("admin_await_user_id".equals(state)) {
+                    if (msg.hasText()) {
+                        String text = msg.getText().trim();
+                        if (text.equals("/cancel")) {
+                            sendText(chatId, "❌ Ball qo'shish bekor qilindi.");
+                            stateMap.put(chatId, "");
+                            sendAdminPanel(chatId);
+                            return;
+                        }
+                        handleAdminScoreAmount(chatId, text);
+                    }
+                    return;
+                }
+
+                // Admin ball qo'shish - score miqdori
+                if (state.startsWith("admin_await_score_")) {
+                    if (msg.hasText()) {
+                        String text = msg.getText().trim();
+                        stateMap.put(chatId, text);
+                        handleAdminAddScoreConfirm(chatId, state);
+                    }
+                    return;
+                }
+
+                // Qolgan admin state'lar...
                 if ("tech_block_user".equals(state)) {
                     if (msg.hasText()) {
                         String text = msg.getText().trim();
@@ -596,34 +837,6 @@ public class Main {
                         } catch (NumberFormatException e) {
                             sendText(chatId, "❌ Iltimos, foydalanuvchi raqamini kiriting!");
                         }
-                    }
-                    return;
-                }
-
-                if ("admin_await_konkurs_image_only".equals(state)) {
-                    if (msg.hasPhoto()) {
-                        List<PhotoSize> photos = msg.getPhoto();
-                        String fileId = photos.get(photos.size()-1).getFileId();
-                        currentKonkursImageUrl = fileId;
-                        currentKonkursMediaType = "photo";
-                        currentKonkursVideoUrl = null;
-                        sendText(chatId, "✅ Konkurs rasmi muvaffaqiyatli yangilandi!");
-                        stateMap.put(chatId, "");
-                        sendKonkursMukofot(chatId);
-                    } else {
-                        sendText(chatId, "❌ Iltimos, faqat rasm yuboring!");
-                    }
-                    return;
-                }
-
-                if ("admin_await_konkurs_text_only".equals(state)) {
-                    if (msg.hasText()) {
-                        currentKonkursText = msg.getText();
-                        sendText(chatId, "✅ Konkurs matni muvaffaqiyatli yangilandi!");
-                        stateMap.put(chatId, "");
-                        sendKonkursMukofot(chatId);
-                    } else {
-                        sendText(chatId, "❌ Iltimos, faqat matn yuboring!");
                     }
                     return;
                 }
@@ -878,17 +1091,37 @@ public class Main {
 
             execute(new AnswerCallbackQuery(cb.getId()));
 
-            // ===== KONKURS VIDEO QO'SHIMCHALARI =====
-            if (data.equals("admin_konkurs_video_only")) {
+            // ===== KONKURS CALLBACKLAR =====
+            if (data.equals("admin_konkurs_video")) {
                 if (ADMIN_IDS.contains(fromId)) {
-                    handleAdminKonkursVideoOnly(chatId);
+                    handleAdminKonkursVideo(chatId);
                 }
                 return;
             }
 
-            if (data.equals("admin_konkurs_both")) {
+            if (data.equals("admin_konkurs_image")) {
                 if (ADMIN_IDS.contains(fromId)) {
-                    handleAdminKonkursBoth(chatId);
+                    handleAdminKonkursImage(chatId);
+                }
+                return;
+            }
+
+            if (data.equals("admin_konkurs_media")) {
+                if (ADMIN_IDS.contains(fromId)) {
+                    sendAdminKonkursMediaMenu(chatId);
+                }
+                return;
+            }
+
+            if (data.equals("konkurs_mukofot_only")) {
+                sendKonkursMukofotOnly(chatId);
+                return;
+            }
+
+            // ===== ADMIN BALL QO'SHISH =====
+            if (data.equals("admin_add_score")) {
+                if (ADMIN_IDS.contains(fromId)) {
+                    handleAdminAddScore(chatId);
                 }
                 return;
             }
@@ -957,7 +1190,7 @@ public class Main {
             }
 
             if (data.equals("menu_konkurs")) {
-                sendKonkursMenu(chatId);
+                sendKonkursMukofot(chatId);
                 return;
             }
 
@@ -1061,29 +1294,6 @@ public class Main {
                     sendText(chatId, "🔍 Taklif qilgan foydalanuvchi raqamini kiriting:\n\n" +
                             "Masalan: 1, 2, 3\n\n" +
                             "Yoki /cancel ni bosing bekor qilish uchun.");
-                }
-                return;
-            }
-
-            if (data.equals("admin_konkurs_change")) {
-                if (ADMIN_IDS.contains(fromId)) {
-                    sendKonkursChangeMenu(chatId);
-                }
-                return;
-            }
-
-            if (data.equals("admin_konkurs_image_only")) {
-                if (ADMIN_IDS.contains(fromId)) {
-                    stateMap.put(chatId, "admin_await_konkurs_image_only");
-                    sendText(chatId, "🖼️ Iltimos, yangi konkurs rasmini yuboring:");
-                }
-                return;
-            }
-
-            if (data.equals("admin_konkurs_text_only")) {
-                if (ADMIN_IDS.contains(fromId)) {
-                    stateMap.put(chatId, "admin_await_konkurs_text_only");
-                    sendText(chatId, "📝 Iltimos, yangi konkurs matnini yuboring:");
                 }
                 return;
             }
@@ -1254,16 +1464,8 @@ public class Main {
                     sendYordamMenu(chatId);
                     break;
 
-                case "konkurs_mukofot":
-                    sendKonkursMukofot(chatId);
-                    break;
-
                 case "konkurs_reting":
                     sendKonkursRating(chatId);
-                    break;
-
-                case "konkurs_shartlar":
-                    sendKonkursShartlar(chatId);
                     break;
 
                 case "konkurs_back":
@@ -2121,48 +2323,6 @@ public class Main {
             caption.append("[Telegram](https://t.me/uzbek_cats)");
 
             return caption.toString();
-        }
-
-        // ==================== KONKURS CHANGE MENU (YANGILANGAN) ====================
-
-        private void sendKonkursChangeMenu(long chatId) throws TelegramApiException {
-            SendMessage msg = new SendMessage();
-            msg.setChatId(String.valueOf(chatId));
-            msg.setText("🏆 Konkursni o'zgartirish:\n\n" +
-                    "Hozirgi media turi: " + ("video".equals(currentKonkursMediaType) ? "🎥 Video" : "🖼️ Rasm") +
-                    "\n\nQuyidagilardan birini tanlang:");
-
-            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-            InlineKeyboardButton imageBtn = new InlineKeyboardButton();
-            imageBtn.setText("🖼️ Faqat rasm o'zgartirish");
-            imageBtn.setCallbackData("admin_konkurs_image_only");
-            rows.add(Collections.singletonList(imageBtn));
-
-            InlineKeyboardButton videoBtn = new InlineKeyboardButton();
-            videoBtn.setText("🎥 Faqat video o'zgartirish");
-            videoBtn.setCallbackData("admin_konkurs_video_only");
-            rows.add(Collections.singletonList(videoBtn));
-
-            InlineKeyboardButton textBtn = new InlineKeyboardButton();
-            textBtn.setText("📝 Faqat matn o'zgartirish");
-            textBtn.setCallbackData("admin_konkurs_text_only");
-            rows.add(Collections.singletonList(textBtn));
-
-            InlineKeyboardButton bothBtn = new InlineKeyboardButton();
-            bothBtn.setText("🔄 Hammasini o'zgartirish");
-            bothBtn.setCallbackData("admin_konkurs_both");
-            rows.add(Collections.singletonList(bothBtn));
-
-            InlineKeyboardButton backBtn = new InlineKeyboardButton();
-            backBtn.setText("↩️ Orqaga");
-            backBtn.setCallbackData("admin_back");
-            rows.add(Collections.singletonList(backBtn));
-
-            markup.setKeyboard(rows);
-            msg.setReplyMarkup(markup);
-            execute(msg);
         }
 
         // ==================== QOLGAN METODLAR ====================
@@ -3174,54 +3334,6 @@ public class Main {
             execute(msg);
         }
 
-        private void sendKonkursShartlar(long chatId) throws TelegramApiException {
-            String referralCode = generateReferralCode(chatId);
-            String referralLink = "https://t.me/" + getBotUsername().replace("@", "") + "?start=" + referralCode;
-
-            String shartlarText = "⬇️ *Qatnashish shartlari:*\n\n" +
-                    "🔗 Bot sizga bergan referral linkni iloji boricha ko'proq do'stlaringizga ulashing.\n" +
-                    "Sizni linkingizdan qo'shilgan har bir ishtirokchiga 1 ball beriladi.\n" +
-                    "Sovg'alar eng ko'p ball to'plagan ishtirokchiga beriladi.\n\n" +
-                    "🎁 *Mukofotlar:*\n" +
-                    "🥇 Scottish fold black\n\n" +
-                    "✅ *Qatnashish juda oson:*\n" +
-                    "1. Botga /start bosing\n" +
-                    "2. Kanallarga a'zo bo'ling\n" +
-                    "3. Do'stlaringizni taklif qiling\n" +
-                    "4. Eng ko'p ball to'plab, mukofotlarni qo'lga kiriting!\n\n" +
-                    "🔗 *Sizning referral linkingiz:*\n" +
-                    "`" + referralLink + "`\n\n" +
-                    "📊 *Sizning ballingiz:* " + getUserScore(chatId) + " ball\n" +
-                    "👥 *Sizning takliflaringiz:* " + getReferralCount(chatId) + " kishi";
-
-            SendMessage msg = new SendMessage();
-            msg.setChatId(String.valueOf(chatId));
-            msg.setText(shartlarText);
-            msg.setParseMode("Markdown");
-
-            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-            InlineKeyboardButton shareBtn = new InlineKeyboardButton();
-            shareBtn.setText("📤 Referral linkni ulashish");
-            try {
-                shareBtn.setUrl("https://t.me/share/url?url=" + URLEncoder.encode(referralLink, "UTF-8") +
-                        "&text=" + URLEncoder.encode("Mushuklar konkursiga qo'shiling! Bu mening referral linkim:", "UTF-8"));
-            } catch (Exception e) {
-                shareBtn.setUrl("https://t.me/share/url?url=" + referralLink);
-            }
-            rows.add(Collections.singletonList(shareBtn));
-
-            InlineKeyboardButton backBtn = new InlineKeyboardButton();
-            backBtn.setText("↩️ Orqaga");
-            backBtn.setCallbackData("menu_konkurs");
-            rows.add(Collections.singletonList(backBtn));
-
-            markup.setKeyboard(rows);
-            msg.setReplyMarkup(markup);
-            execute(msg);
-        }
-
         private String generateReferralCode(long userId) {
             String code = "REF" + userId + "_" + System.currentTimeMillis();
             referralCodes.put(userId, code);
@@ -3289,14 +3401,19 @@ public class Main {
             rows.add(Collections.singletonList(statsBtn));
 
             InlineKeyboardButton konkursBtn = new InlineKeyboardButton();
-            konkursBtn.setText("🏆 Konkursni o'zgartirish");
-            konkursBtn.setCallbackData("admin_konkurs_change");
+            konkursBtn.setText("🏆 Konkurs shart");
+            konkursBtn.setCallbackData("admin_konkurs_media");
             rows.add(Collections.singletonList(konkursBtn));
 
             InlineKeyboardButton ratingBtn = new InlineKeyboardButton();
             ratingBtn.setText("🏆 Reyting boshqarish");
             ratingBtn.setCallbackData("admin_rating_manage");
             rows.add(Collections.singletonList(ratingBtn));
+
+            InlineKeyboardButton addScoreBtn = new InlineKeyboardButton();
+            addScoreBtn.setText("➕ Foydalanuvchiga ball qo'shish");
+            addScoreBtn.setCallbackData("admin_add_score");
+            rows.add(Collections.singletonList(addScoreBtn));
 
             if (chatId == TECHNICAL_ADMIN_ID) {
                 InlineKeyboardButton techBtn = new InlineKeyboardButton();
@@ -3905,22 +4022,32 @@ public class Main {
         }
 
         private void sendPriceList(long chatId) throws TelegramApiException {
-            String priceText = "🐱 *MUSHUK REKLAMA NARXLARI*\n\n" +
-                    "❕ Iltimos oxirigacha diqqat bilan o'qib tanishib chiqing.\n\n" +
-                    "📢 *Telegram Reklama Narxlari:*\n" +
-                    "• [Telegram Kanal](https://t.me/uzbek_cats) - 25,000 so'm\n" +
-                    "   _(mushukcha sotilguncha turadi)_\n\n" +
-                    "📷 *Instagram Reklama Narxlari:*\n" +
-                    "• [Instagram Story](https://instagram.com/zayd.catlover) - 40,000 so'm\n\n" +
-                    "👤 *Shaxsiy Telegram Story:*\n" +
-                    "• [Shaxsiy Telegram](https://t.me/zayd_catlover) - 15,000 so'm\n\n" +
-                    "💝 *Mushukgimga juft topmoqchiman (viyazka):*\n" +
-                    "• [Telegram Kanal](https://t.me/uzbek_cats) - 100,000 so'm\n" +
-                    "   _(o'chib ketmaydi, doim turadi)_\n\n" +
-                    "• [Instagram Story](https://instagram.com/zayd.catlover) - 50,000 so'm\n" +
-                    "   _(aktual qo'yiladi, umrbod turadi)_\n\n" +
-                    "• [Shaxsiy Telegram](https://t.me/zayd_catlover) - 20,000 so'm\n" +
-                    "   _(24 soat turadi)_\n\n" +
+            String priceText = "\uD83D\uDCB0 REKLAMA NARXLARI\n" +
+                    "━━━━━━━━━━━━━━━━━━\n" +
+                    "\uD83D\uDC3E \uD83D\uDCE2 SOTUV E'LONI\n" +
+                    "❗\uFE0F Iltimos, diqqat bilan tanishib chiqing!\n" +
+                    "\uD83D\uDCCC Reklama narxi sotmoqchi bo'lgan mushuklaringiz soniga qarab belgilanadi.\n" +
+                    "✅ E'loningiz faqat 1 marta kanalga joylanadi va mushuk(lar)ingiz sotilmaguncha kanaldan o'chirilmaydi.\n" +
+                    "\uD83D\uDCB5 Narxlar:\n" +
+                    "\uD83D\uDC31 1 ta mushuk — 25 000 so'm\n" +
+                    "\uD83D\uDC31 2 ta mushuk — 45 000 so'm\n" +
+                    "\uD83D\uDC31 3 ta mushuk — 65 000 so'm\n" +
+                    "\uD83D\uDC31 4 ta mushuk — 85 000 so'm\n" +
+                    "\uD83D\uDC31 5 ta va undan ortiq mushuklar — 105 000 so'm\n" +
+                    "━━━━━━━━━━━━━━━━━━\n" +
+                    "\uD83D\uDC95 \uD83D\uDC3E VYAZKA (Juftlashtirish) E'LONI\n" +
+                    "\uD83D\uDC08 Erkak mushuk — 100 000 so'm\n" +
+                    "\uD83D\uDC08\u200D⬛ Urg'ochi mushuk — 50 000 so'm\n" +
+                    "━━━━━━━━━━━━━━━━━━\n" +
+                    "\uD83D\uDD0E \uD83D\uDC3E QIDIRUV E'LONI\n" +
+                    "\uD83D\uDCCD Yo'qolgan yoki qidirilayotgan mushuk uchun reklama narxi:\n" +
+                    "\uD83D\uDCB0 50 000 so'm\n" +
+                    "━━━━━━━━━━━━━━━━━━\n" +
+                    "\uD83C\uDF81 \uD83D\uDC3E HADIYA VA KASAL MUSHUK E'LONLARI\n" +
+                    "❤\uFE0F Yaxshi niyat bilan hadyaga berilayotgan yoki yordamga muhtoj kasal mushuklar uchun reklama:\n" +
+                    "✅ Mutlaqo BEPUL — 0 so'm\n" +
+                    "━━━━━━━━━━━━━━━━━━\n" +
+                    "\uD83D\uDCE9 Reklama berish uchun administratorga murojaat qiling." +
                     "⚠️ *Eslatma:* Yuqoridagi narxlar faqat 1 ta mushuk reklamasi uchun.\n\n" +
                     "💳 *To'lov Ma'lumotlari:*\n" +
                     "• Karta raqam: `5614 6816 2628 0956`\n" +
@@ -4468,39 +4595,6 @@ public class Main {
                     "📍 Manzil: " + manzilMap.getOrDefault(userId, "—") + "\n" +
                     "📞 Telefon: " + phoneMap.getOrDefault(userId, "—") + "\n" +
                     "💰 Narx: " + priceMap.getOrDefault(userId, "—");
-        }
-
-        private void sendKonkursMenu(long chatId) throws TelegramApiException {
-            SendMessage msg = new SendMessage();
-            msg.setChatId(String.valueOf(chatId));
-            msg.setText("🏆 Konkurs bo'limiga xush kelibsiz!\n\nQuyidagilardan birini tanlang:");
-
-            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-            InlineKeyboardButton mukofotBtn = new InlineKeyboardButton();
-            mukofotBtn.setText("🎁 Mukofot");
-            mukofotBtn.setCallbackData("konkurs_mukofot");
-            rows.add(Collections.singletonList(mukofotBtn));
-
-            InlineKeyboardButton retingBtn = new InlineKeyboardButton();
-            retingBtn.setText("🏆 Reting");
-            retingBtn.setCallbackData("konkurs_reting");
-            rows.add(Collections.singletonList(retingBtn));
-
-            InlineKeyboardButton shartlarBtn = new InlineKeyboardButton();
-            shartlarBtn.setText("📋 Shartlar");
-            shartlarBtn.setCallbackData("konkurs_shartlar");
-            rows.add(Collections.singletonList(shartlarBtn));
-
-            InlineKeyboardButton backBtn = new InlineKeyboardButton();
-            backBtn.setText("↩️ Orqaga");
-            backBtn.setCallbackData("konkurs_back");
-            rows.add(Collections.singletonList(backBtn));
-
-            markup.setKeyboard(rows);
-            msg.setReplyMarkup(markup);
-            execute(msg);
         }
 
         private void sendAboutMenu(long chatId) throws TelegramApiException {
@@ -5116,7 +5210,7 @@ public class Main {
             } else {
                 int mushukSoni = mushukSoniMap.getOrDefault(chatId, 1);
                 switch (mushukSoni) {
-                     case 1: narx = 25000; mushukText = "1 ta mushuk"; break;
+                    case 1: narx = 25000; mushukText = "1 ta mushuk"; break;
                     case 2: narx = 50000; mushukText = "2 ta mushuk"; break;
                     case 3: narx = 65000; mushukText = "3 ta mushuk"; break;
                     case 4: narx = 85000; mushukText = "4 ta mushuk"; break;
