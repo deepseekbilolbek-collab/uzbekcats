@@ -3521,7 +3521,21 @@ public class Main {
         private void sendMushukSoniSelection(long chatId) throws TelegramApiException {
             SendMessage msg = new SendMessage();
             msg.setChatId(String.valueOf(chatId));
-            msg.setText("🐱 Sizning mushugingiz nechta?");
+            msg.setText("\uD83D\uDCB0 Reklama narxlari\n" +
+                    "❗\uFE0F Iltimos, diqqat bilan tanishib chiqing!\n" +
+                    "\n" +
+                    "\uD83D\uDC31 Mushuklaringizni nechta sotmoqchi bo'lsangiz, narx shunga qarab belgilanadi.\n" +
+                    "\n" +
+                    "\uD83D\uDCCC E'lon faqat 1 marta joylanadi, ammo mushugingiz sotilmaguncha kanaldan olib tashlanmaydi.\n" +
+                    "\n" +
+                    "\uD83D\uDCB5 Narxlar:\n" +
+                    "\uD83D\uDC3E 1 ta mushuk — 25 000 so'm\n" +
+                    "\uD83D\uDC3E 2 ta mushuk — 45 000 so'm\n" +
+                    "\uD83D\uDC3E 3 ta mushuk — 65 000 so'm\n" +
+                    "\uD83D\uDC3E 4 ta mushuk — 85 000 so'm\n" +
+                    "\uD83D\uDC3E 5 ta mushuk — 105 000 so'm\n" +
+                    "\n" +
+                    "\uD83D\uDC47 Siz nechta mushuk sotmoqchisiz?");
 
             InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
             List<List<InlineKeyboardButton>> rows = new ArrayList<>();
