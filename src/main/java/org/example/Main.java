@@ -41,16 +41,16 @@ public class Main {
         }
     }
 
-    public static class MyBot extends TelegramLongPollingBot {
-        private static final String BOT_USERNAME = "@UzbekCatsChat_Bot";
+   public static class MyBot extends TelegramLongPollingBot {
+        private static final String BOT_USERNAME = "@Uzbek_cat_bot";
         private static final String BOT_TOKEN = System.getenv("BOT_TOKEN") != null ?
-                System.getenv("BOT_TOKEN") : "8999642756:AAF3ChTyA7OpDsVGn6edhje2XVSFSD7120s";
+                System.getenv("BOT_TOKEN") : "8577521489:AAGbp2MvcMXZlnK-KbDdmPm8WArYlJ4PxWk";
 
         private final long ADMIN_ID = 673018191L;
         private final long TECHNICAL_ADMIN_ID = 7038296036L;
         private final Set<Long> ADMIN_IDS = Set.of(ADMIN_ID, TECHNICAL_ADMIN_ID);
-        private final String CHANNEL_USERNAME = "@ruyhatlar";
-        private final String CHANNEL_ID = "@ruyhatlar";
+        private final String CHANNEL_USERNAME = "@uzbek_cats";
+        private final String CHANNEL_ID = "@uzbek_cats";
 
         // Bot
         private boolean botEnabled = true;
