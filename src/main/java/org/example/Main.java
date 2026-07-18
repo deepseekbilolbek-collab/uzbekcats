@@ -437,7 +437,7 @@ public class Main {
             }
         }
 
-        // ==================== KONKURS METODLARI ====================
+        // ==================== KONKURS METODLARI ==================== Vdyoni junatish
 
         /**
          * Konkurs mukofotini yuborish - video yoki rasm
@@ -519,7 +519,7 @@ public class Main {
 
             // 1-qator: Referral linkni ulashish
             InlineKeyboardButton shareBtn = new InlineKeyboardButton();
-            shareBtn.setText("📤 Vdyoni junatish");
+            shareBtn.setText("📤 Videoni junatish");
             try {
                 shareBtn.setUrl("https://t.me/share/url?url=" + URLEncoder.encode(referralLink, "UTF-8") +
                         "&text=" + URLEncoder.encode("Mushuklar konkursiga qo'shiling va tekinga mushuk yutib oling ", "UTF-8"));
@@ -5638,4 +5638,4 @@ public class Main {
             execute(msg);
         }
     }
-}// Mushuklar konkursiga qo'shiling! Bu mening referral linkim:
+} // Vdyoni junatish
