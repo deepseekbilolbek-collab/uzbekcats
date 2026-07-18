@@ -11,7 +11,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendVideo;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
 import org.telegram.telegrambots.meta.api.objects.*;
-import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
+        import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -25,7 +25,7 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+        import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -41,7 +41,7 @@ public class Main {
         }
     }
 
-   public static class MyBot extends TelegramLongPollingBot {
+    public static class MyBot extends TelegramLongPollingBot {
         private static final String BOT_USERNAME = "@Uzbek_cat_bot";
         private static final String BOT_TOKEN = System.getenv("BOT_TOKEN") != null ?
                 System.getenv("BOT_TOKEN") : "8577521489:AAGbp2MvcMXZlnK-KbDdmPm8WArYlJ4PxWk";
@@ -105,6 +105,12 @@ public class Main {
         private String currentKonkursVideoUrl = null;
         private String currentKonkursMediaType = "photo"; // "photo" yoki "video"
         private String currentKonkursText = "🎁 Scottish fold black\n\nSiz toplagan ovoz ochib ketmaydi toki 🏆 g'olib bo'lgungizgacha 💯";
+
+        // ===== KONKURS MUKOFOT (YANGI) =====
+        private String konkursMukofotImageUrl = null;
+        private String konkursMukofotVideoUrl = null;
+        private String konkursMukofotMediaType = "photo"; // "photo" yoki "video"
+        private String konkursMukofotText = "🎁 MUKOFOT!";
 
         // Bloklangan so'zlar
         private final Set<String> bannedWords = Set.of(
@@ -340,7 +346,98 @@ public class Main {
             }
         }
 
-        // ==================== KONKURS METODLARI (YANGILANGAN) ====================
+        // ==================== KONKURS MUKOFOT (YANGI FUNKSIYA) ====================
+
+        /**
+         * Admin - Konkurs mukofotini sozlash menyusi
+         */
+        private void sendAdminKonkursMukofotMenu(long chatId) throws TelegramApiException {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(String.valueOf(chatId));
+            msg.setText("🏆 *Konkurs Mukofotini sozlash*\n\n" +
+                    "Hozirgi media turi: " + ("video".equals(konkursMukofotMediaType) ? "🎥 Video" : "🖼️ Rasm") +
+                    "\n\nQuyidagilardan birini tanlang:");
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+            InlineKeyboardButton videoBtn = new InlineKeyboardButton();
+            videoBtn.setText("🎥 Video va matn joylash");
+            videoBtn.setCallbackData("admin_mukofot_video");
+            rows.add(Collections.singletonList(videoBtn));
+
+            InlineKeyboardButton imageBtn = new InlineKeyboardButton();
+            imageBtn.setText("🖼️ Rasm va matn joylash");
+            imageBtn.setCallbackData("admin_mukofot_image");
+            rows.add(Collections.singletonList(imageBtn));
+
+            InlineKeyboardButton backBtn = new InlineKeyboardButton();
+            backBtn.setText("↩️ Orqaga");
+            backBtn.setCallbackData("admin_panel");
+            rows.add(Collections.singletonList(backBtn));
+
+            markup.setKeyboard(rows);
+            msg.setReplyMarkup(markup);
+            execute(msg);
+        }
+
+        /**
+         * Admin - Mukofot videosini yuborish
+         */
+        private void handleAdminMukofotVideo(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_mukofot_video");
+            sendText(adminId, "🎥 Iltimos, yangi mukofot videosini yuboring:\n\n" +
+                    "• Video 1 daqiqagacha bo'lsin\n" +
+                    "• Video aniq va yorug' bo'lsin");
+        }
+
+        /**
+         * Admin - Mukofot rasmini yuborish
+         */
+        private void handleAdminMukofotImage(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_mukofot_image");
+            sendText(adminId, "🖼️ Iltimos, yangi mukofot rasmini yuboring:\n\n" +
+                    "• Rasm aniq va yorug' bo'lsin\n" +
+                    "• Format: JPEG, PNG");
+        }
+
+        /**
+         * Admin - Mukofot matnini yuborish
+         */
+        private void handleAdminMukofotText(long adminId) throws TelegramApiException {
+            stateMap.put(adminId, "admin_await_mukofot_text");
+            sendText(adminId, "📝 Iltimos, yangi mukofot matnini yuboring:");
+        }
+
+        /**
+         * Mukofotni foydalanuvchiga yuborish
+         */
+        private void sendKonkursMukofotToUser(long chatId) throws TelegramApiException {
+            try {
+                if ("video".equals(konkursMukofotMediaType) && konkursMukofotVideoUrl != null) {
+                    SendVideo video = new SendVideo();
+                    video.setChatId(String.valueOf(chatId));
+                    video.setVideo(new InputFile(konkursMukofotVideoUrl));
+                    video.setCaption(konkursMukofotText);
+                    video.setParseMode("Markdown");
+                    execute(video);
+                } else if (konkursMukofotImageUrl != null && !konkursMukofotImageUrl.isEmpty()) {
+                    SendPhoto photo = new SendPhoto();
+                    photo.setChatId(String.valueOf(chatId));
+                    photo.setPhoto(new InputFile(konkursMukofotImageUrl));
+                    photo.setCaption(konkursMukofotText);
+                    photo.setParseMode("Markdown");
+                    execute(photo);
+                } else {
+                    sendText(chatId, "🎁 *MUKOFOT*\n\n" + konkursMukofotText);
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Mukofot yuborishda xatolik: " + e.getMessage());
+                sendText(chatId, "❌ Xatolik yuz berdi.");
+            }
+        }
+
+        // ==================== KONKURS METODLARI ====================
 
         /**
          * Konkurs mukofotini yuborish - video yoki rasm
@@ -422,10 +519,10 @@ public class Main {
 
             // 1-qator: Referral linkni ulashish
             InlineKeyboardButton shareBtn = new InlineKeyboardButton();
-            shareBtn.setText("📤 Referral linkni ulashish");
+            shareBtn.setText("📤 Vdyoni junatish");
             try {
                 shareBtn.setUrl("https://t.me/share/url?url=" + URLEncoder.encode(referralLink, "UTF-8") +
-                        "&text=" + URLEncoder.encode("Mushuklar konkursiga qo'shiling! Bu mening referral linkim:", "UTF-8"));
+                        "&text=" + URLEncoder.encode("Mushuklar konkursiga qo'shiling va tekinga mushuk yutib oling ", "UTF-8"));
             } catch (Exception e) {
                 shareBtn.setUrl("https://t.me/share/url?url=" + referralLink);
             }
@@ -456,31 +553,11 @@ public class Main {
         }
 
         /**
-         * Faqat mukofotni ko'rsatish (video/rasm)
+         * Faqat mukofotni ko'rsatish (video/rasm) - KONKURS MUKOFOTI
          */
         private void sendKonkursMukofotOnly(long chatId) throws TelegramApiException {
-            try {
-                if ("video".equals(currentKonkursMediaType) && currentKonkursVideoUrl != null) {
-                    SendVideo video = new SendVideo();
-                    video.setChatId(String.valueOf(chatId));
-                    video.setVideo(new InputFile(currentKonkursVideoUrl));
-                    video.setCaption("🎁 *MUKOFOT*\n\n" + currentKonkursText);
-                    video.setParseMode("Markdown");
-                    execute(video);
-                } else if (currentKonkursImageUrl != null && !currentKonkursImageUrl.isEmpty()) {
-                    SendPhoto photo = new SendPhoto();
-                    photo.setChatId(String.valueOf(chatId));
-                    photo.setPhoto(new InputFile(currentKonkursImageUrl));
-                    photo.setCaption("🎁 *MUKOFOT*\n\n" + currentKonkursText);
-                    photo.setParseMode("Markdown");
-                    execute(photo);
-                } else {
-                    sendText(chatId, "🎁 *MUKOFOT*\n\n" + currentKonkursText);
-                }
-            } catch (Exception e) {
-                System.out.println("❌ Mukofot yuborishda xatolik: " + e.getMessage());
-                sendText(chatId, "❌ Xatolik yuz berdi.");
-            }
+            // Admin sozlagan mukofotni yuboramiz
+            sendKonkursMukofotToUser(chatId);
         }
 
         // ==================== ADMIN KONKURS METODLARI ====================
@@ -524,7 +601,7 @@ public class Main {
         private void handleAdminKonkursVideo(long adminId) throws TelegramApiException {
             stateMap.put(adminId, "admin_await_konkurs_video");
             sendText(adminId, "🎥 Iltimos, yangi konkurs videosini yuboring:\n\n" +
-                    "• Video 10 soniyadan uzun bo'lmasin\n" +
+                    "• Video 1 daqiqagacha bo'lsin\n" +
                     "• Video aniq va yorug' bo'lsin");
         }
 
@@ -705,21 +782,21 @@ public class Main {
                 }
             }
 
-            // ===== ADMIN KONKURS VIDEO STATES =====
+            // ===== ADMIN KONKURS MUKOFOT STATES (YANGI) =====
             if (ADMIN_IDS.contains(chatId)) {
-                // Admin video yuborish
-                if ("admin_await_konkurs_video".equals(state)) {
+                // Admin mukofot video yuborish
+                if ("admin_await_mukofot_video".equals(state)) {
                     if (msg.hasVideo()) {
                         Video video = msg.getVideo();
-                        if (video.getDuration() <= 10) {
+                        if (video.getDuration() <= 60) {
                             String fileId = video.getFileId();
-                            currentKonkursVideoUrl = fileId;
-                            currentKonkursMediaType = "video";
-                            currentKonkursImageUrl = null;
+                            konkursMukofotVideoUrl = fileId;
+                            konkursMukofotMediaType = "video";
+                            konkursMukofotImageUrl = null;
                             sendText(chatId, "✅ Video qabul qilindi! Endi matn yuboring:");
-                            stateMap.put(chatId, "admin_await_konkurs_text");
+                            stateMap.put(chatId, "admin_await_mukofot_text");
                         } else {
-                            sendText(chatId, "❌ Video 10 soniyadan uzun! Iltimos, 10 soniyagacha video yuboring.");
+                            sendText(chatId, "❌ Video 1 daqiqadan uzun! Iltimos, 1 daqiqagacha video yuboring.");
                         }
                     } else {
                         sendText(chatId, "❌ Iltimos, faqat video yuboring!");
@@ -727,7 +804,56 @@ public class Main {
                     return;
                 }
 
-                // Admin rasm yuborish
+                // Admin mukofot rasm yuborish
+                if ("admin_await_mukofot_image".equals(state)) {
+                    if (msg.hasPhoto()) {
+                        List<PhotoSize> photos = msg.getPhoto();
+                        String fileId = photos.get(photos.size()-1).getFileId();
+                        konkursMukofotImageUrl = fileId;
+                        konkursMukofotMediaType = "photo";
+                        konkursMukofotVideoUrl = null;
+                        sendText(chatId, "✅ Rasm qabul qilindi! Endi matn yuboring:");
+                        stateMap.put(chatId, "admin_await_mukofot_text");
+                    } else {
+                        sendText(chatId, "❌ Iltimos, faqat rasm yuboring!");
+                    }
+                    return;
+                }
+
+                // Admin mukofot matn yuborish
+                if ("admin_await_mukofot_text".equals(state)) {
+                    if (msg.hasText()) {
+                        konkursMukofotText = msg.getText();
+                        sendText(chatId, "✅ Mukofot rasmi/videosi va matni muvaffaqiyatli yangilandi!");
+                        stateMap.put(chatId, "");
+                        sendKonkursMukofotToUser(chatId);
+                    } else {
+                        sendText(chatId, "❌ Iltimos, faqat matn yuboring!");
+                    }
+                    return;
+                }
+
+                // Admin konkurs video yuborish
+                if ("admin_await_konkurs_video".equals(state)) {
+                    if (msg.hasVideo()) {
+                        Video video = msg.getVideo();
+                        if (video.getDuration() <= 60) {
+                            String fileId = video.getFileId();
+                            currentKonkursVideoUrl = fileId;
+                            currentKonkursMediaType = "video";
+                            currentKonkursImageUrl = null;
+                            sendText(chatId, "✅ Video qabul qilindi! Endi matn yuboring:");
+                            stateMap.put(chatId, "admin_await_konkurs_text");
+                        } else {
+                            sendText(chatId, "❌ Video 1 daqiqadan uzun! Iltimos, 1 daqiqagacha video yuboring.");
+                        }
+                    } else {
+                        sendText(chatId, "❌ Iltimos, faqat video yuboring!");
+                    }
+                    return;
+                }
+
+                // Admin konkurs rasm yuborish
                 if ("admin_await_konkurs_image".equals(state)) {
                     if (msg.hasPhoto()) {
                         List<PhotoSize> photos = msg.getPhoto();
@@ -743,7 +869,7 @@ public class Main {
                     return;
                 }
 
-                // Admin matn yuborish
+                // Admin konkurs matn yuborish
                 if ("admin_await_konkurs_text".equals(state)) {
                     if (msg.hasText()) {
                         currentKonkursText = msg.getText();
@@ -1008,7 +1134,8 @@ public class Main {
             if (msg.hasVideo() && "await_photo".equals(state) && "video".equals(mediaType)) {
                 Video video = msg.getVideo();
 
-                if (video.getDuration() <= 10) {
+                // 1 daqiqagacha (60 soniya) video qabul qilamiz
+                if (video.getDuration() <= 60) {
                     String fileId = video.getFileId();
 
                     if (!photosMap.containsKey(chatId)) {
@@ -1018,7 +1145,7 @@ public class Main {
                     List<String> userPhotos = photosMap.get(chatId);
                     if (userPhotos.isEmpty()) {
                         userPhotos.add("video:" + fileId);
-                        sendText(chatId, "✅ Video qabul qilindi! (10 soniyagacha)\n\n" +
+                        sendText(chatId, "✅ Video qabul qilindi! (1 daqiqagacha)\n\n" +
                                 "Endi 'Davom etish' tugmasini bosing.");
                         sendContinueButton(chatId);
                     } else {
@@ -1026,7 +1153,7 @@ public class Main {
                     }
 
                 } else {
-                    sendText(chatId, "❌ Video 10 soniyadan uzun! Iltimos, 10 soniyagacha bo'lgan video yuboring.");
+                    sendText(chatId, "❌ Video 1 daqiqadan uzun! Iltimos, 1 daqiqagacha bo'lgan video yuboring.");
                 }
                 return;
             }
@@ -1060,7 +1187,8 @@ public class Main {
             if (msg.hasVideo() && state.startsWith("yordam_") && state.endsWith("_photo")) {
                 Video video = msg.getVideo();
 
-                if (video.getDuration() <= 10) {
+                // 1 daqiqagacha (60 soniya) video qabul qilamiz
+                if (video.getDuration() <= 60) {
                     String fileId = video.getFileId();
 
                     if (!photosMap.containsKey(chatId)) {
@@ -1070,11 +1198,11 @@ public class Main {
                     List<String> userPhotos = photosMap.get(chatId);
                     userPhotos.add("video:" + fileId);
 
-                    sendText(chatId, "✅ Video qabul qilindi! (10 soniyagacha)\n\n" +
+                    sendText(chatId, "✅ Video qabul qilindi! (1 daqiqagacha)\n\n" +
                             "Endi 'Davom etish' tugmasini bosing.");
 
                 } else {
-                    sendText(chatId, "❌ Video 10 soniyadan uzun! Iltimos, 10 soniyagacha video yuboring.");
+                    sendText(chatId, "❌ Video 1 daqiqadan uzun! Iltimos, 1 daqiqagacha video yuboring.");
                 }
                 return;
             }
@@ -1090,6 +1218,28 @@ public class Main {
             long fromId = cb.getFrom().getId();
 
             execute(new AnswerCallbackQuery(cb.getId()));
+
+            // ===== KONKURS MUKOFOT CALLBACKLAR (YANGI) =====
+            if (data.equals("admin_konkurs_mukofot")) {
+                if (ADMIN_IDS.contains(fromId)) {
+                    sendAdminKonkursMukofotMenu(chatId);
+                }
+                return;
+            }
+
+            if (data.equals("admin_mukofot_video")) {
+                if (ADMIN_IDS.contains(fromId)) {
+                    handleAdminMukofotVideo(chatId);
+                }
+                return;
+            }
+
+            if (data.equals("admin_mukofot_image")) {
+                if (ADMIN_IDS.contains(fromId)) {
+                    handleAdminMukofotImage(chatId);
+                }
+                return;
+            }
 
             // ===== KONKURS CALLBACKLAR =====
             if (data.equals("admin_konkurs_video")) {
@@ -1379,7 +1529,7 @@ public class Main {
                     sendPlatformaSelection(chatId);
                 } else {
                     String instruction = "🎥 Iltimos, mushukning videosini yuboring:\n\n" +
-                            "• Video 10 soniyadan uzun bo'lmasin\n" +
+                            "• Video 1 daqiqadan uzun bo'lmasin\n" +
                             "• Video aniq va yorug' bo'lsin";
                     sendText(chatId, instruction);
                 }
@@ -1430,13 +1580,13 @@ public class Main {
                 if ("video".equals(mediaType)) {
                     sendText(chatId, "🎥 Iltimos, mushukning videosini yuboring:\n\n" +
                             " • Mushukchani chiroyli suratidan jo'nating \n" +
-                            " • Video 10 soniyadan uzun bo'lmasin\n" +
+                            " • Video 1 daqiqadan uzun bo'lmasin\n" +
                             " • Video aniq va yorug' bo'lsin");
                 } else {
                     sendText(chatId, "📸 Iltimos, mushukning rasmlarini yuboring:\n\n" +
                             " • Mushukchani chiroyli suratidan jo'nating \n" +
                             " • 1 dan 3 tagacha bo'lgan surat jo'natishingiz mumkin\n" +
-                            " • yoki 5-10 sekundgacha video jo'ylashingiz mumkin 10 sekuntdan\n\n" +
+                            " • yoki 5-10 sekundgacha video jo'ylashingiz mumkin 1 daqiqadan\n\n" +
                             " • ortiq videoni qabul qilmaymiz ❗️");
                 }
                 return;
@@ -1658,7 +1808,7 @@ public class Main {
                     String currentState = stateMap.get(chatId);
                     if (currentState.startsWith("yordam_")) {
                         stateMap.put(chatId, currentState + "_photo");
-                        sendText(chatId, "📸 Endi rasm yuboring (1-3 ta rasm yoki 10 soniyagacha video):");
+                        sendText(chatId, "📸 Endi rasm yuboring (1-3 ta rasm yoki 1 daqiqagacha video):");
                     }
                     break;
 
@@ -1966,7 +2116,7 @@ public class Main {
 
                         // Telefon raqamini holatga o'zgartiramiz
                         if ("hadiya".equals(ad.adType)) {
-                            ad.phone = "✅ Berib bo'ldik";
+                            ad.phone = "Berib bo'ldik";
                         } else if ("sotish".equals(ad.adType)) {
                             ad.phone = "💰 Sotildi";
                         } else {
@@ -3175,7 +3325,7 @@ public class Main {
             if (ad.isActive) {
                 sb.append("📞 *Telefon:* ").append(ad.phone).append("\n\n");
             } else {
-                String statusText = "hadiya".equals(ad.adType) ? "✅ Berib bo'ldik" :
+                String statusText = "hadiya".equals(ad.adType) ? "Berib bo'ldik" :
                         ("sotish".equals(ad.adType) ? "💰 Sotildi" : "💝 Juft topildi");
                 sb.append("📞 *Holat:* ").append(statusText).append("\n\n");
             }
@@ -3404,6 +3554,12 @@ public class Main {
             konkursBtn.setText("🏆 Konkurs shart");
             konkursBtn.setCallbackData("admin_konkurs_media");
             rows.add(Collections.singletonList(konkursBtn));
+
+            // ===== KONKURS MUKOFOT TUGMASI (YANGI) =====
+            InlineKeyboardButton mukofotBtn = new InlineKeyboardButton();
+            mukofotBtn.setText("🎁 Konkurs Mukofot");
+            mukofotBtn.setCallbackData("admin_konkurs_mukofot");
+            rows.add(Collections.singletonList(mukofotBtn));
 
             InlineKeyboardButton ratingBtn = new InlineKeyboardButton();
             ratingBtn.setText("🏆 Reyting boshqarish");
@@ -4168,7 +4324,7 @@ public class Main {
 
             String message = "🐱 **ONASIZ MUSHUK**\n\n" +
                     "Agar sizda onasiz mushuk bolalar bo'lsa va ularga yordam kerak bo'lsa, iltimos quyidagilarni bajaring:\n\n" +
-                    "📸 Mushukchalarning 1-3 ta rasmini yoki 10 soniyagacha videolarini yuboring\n\n" +
+                    "📸 Mushukchalarning 1-3 ta rasmini yoki 1 daqiqagacha videolarini yuboring\n\n" +
                     "📍 Manzilingizni va telefon raqamingizni kiritasiz\n\n" +
                     "✅ So'rovingizni tasdiqlaganingizdan so'ng adminlar tekshirib kanalga joylaydi";
 
@@ -4202,7 +4358,7 @@ public class Main {
 
             String message = "🏥 **KASAL MUSHUK**\n\n" +
                     "Agar sizda kasal mushuk bo'lsa va unga davolash uchun yordam kerak bo'lsa, iltimos quyidagilarni bajaring:\n\n" +
-                    "📸 Kasal mushukning 1-3 ta rasmini yoki 10 soniyagacha videolarini yuboring\n\n" +
+                    "📸 Kasal mushukning 1-3 ta rasmini yoki 1 daqiqagacha videolarini yuboring\n\n" +
                     "📍 Manzilingizni va telefon raqamingizni kiritasiz\n\n" +
                     "✅ So'rovingizni tasdiqlaganingizdan so'ng adminlar tekshirib kanalga joylaydi";
 
@@ -4236,7 +4392,7 @@ public class Main {
 
             String message = "🎁 **KASAL MUSHUK HADIYAGA**\n\n" +
                     "Agar sizda kasal mushuk bo'lsa va uni boqolmasangiz, boshqalarga hadiya qilmoqchi bo'lsangiz, iltimos quyidagilarni bajaring:\n\n" +
-                    "📸 Kasal mushukning 1-3 ta rasmini yoki 10 soniyagacha videolarini yuboring\n\n" +
+                    "📸 Kasal mushukning 1-3 ta rasmini yoki 1 daqiqagacha videolarini yuboring\n\n" +
                     "📍 Manzilingizni va telefon raqamingizni kiritasiz\n\n" +
                     "✅ So'rovingizni tasdiqlaganingizdan so'ng adminlar tekshirib kanalga joylaydi";
 
@@ -4267,7 +4423,7 @@ public class Main {
         private void handleYordamConfirm(long chatId) throws TelegramApiException {
             String state = stateMap.get(chatId);
             stateMap.put(chatId, state + "_photo");
-            sendText(chatId, "📸 Endi rasm yuboring (1-3 ta rasm yoki 10 soniyagacha video):");
+            sendText(chatId, "📸 Endi rasm yuboring (1-3 ta rasm yoki 1 daqiqagacha video):");
         }
 
         private void sendYordamViloyatSelection(long chatId) throws TelegramApiException {
@@ -5482,4 +5638,4 @@ public class Main {
             execute(msg);
         }
     }
-}
+}// Mushuklar konkursiga qo'shiling! Bu mening referral linkim:
